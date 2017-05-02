@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static',filename='imgs/favicon.ico') }}"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+    <title>图片标注平台</title>
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-inverse navbar-fixed-top navbar-default" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="">Whaley图片标注平台</a>
+            </div>
+        </div>
+    </nav>
+    <div class="main-container">
+        <div class="well">
+            <div class="left-panel row">
+                <div class="left">
+                    <table class="table table-hover">
+                        <caption><h2>基本信息</h2></caption>
+                        <tr><td width="100">剧名</td><td class="title">{{ title }}</td></tr>
+                        <tr><td>当前集数</td><td class="episode">{{ episode }}</td></tr>
+                        <tr><td>当前时间戳</td><td class="frame_timestamp">{{ frame_timestamp }}</td></tr>
+                        <tr><td>主演</td>
+                             <td>
+                                {% for actor in acts[:-2] %}
+                                    {{ actor }},
+                                {% endfor %}
+                             {{ acts[-2] }}
+                            </td>
+                        </tr>
+                    </table>
+                 </div>
+            </div>
+            <div class="right-panel">
+                <div class="img_container">
+                    <img  class="img-thumbnail main-img" src="{{ url }}" id="{{ img_hash }}" height="500" width="550">
+                </div>
+                <div class="well buttons">
+                   {% for act in acts[:-1] %}
+                       <button  class="btn btn-primary" style="height:40px;width:100px;" type="button" value="{{ act }}">
+                        {{ act }}
+                       </button>
+                   {% endfor %}
+                <button  class="btn btn-warning" style="height:40px;width:100px;" type="button" value="{{ acts[-1] }}">{{ acts[-1] }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{#    src="../static/js/jquery.min.js"　#}
+    <script type="text/javascript" src="{{url_for('static',filename='js/jquery.min.js')}}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+    <script type="text/javascript" >
+        $(".btn").click(function(){
+            var aname = $(this).attr("value");
+            var img_hash = $('.main-img').attr("id");
+            var title = $('.title').text();
+            var episode = $('.episode').text();
+            var frame_timestamp = $('.frame_timestamp').text();
+{#            alert(check);#}
+            console.log(title);
+            var data = {
+                "aname": aname,
+                "img_hash": img_hash,
+                "title": title,
+                "episode": episode,
+                "frame_timestamp": frame_timestamp
+            };
+            $.ajax({
+               type: "POST",
+               url: "/get_data",//把表单数据发送到/get_data
+               data: data,// 发送的数据
+               dataType: "json",//返回数据形式为json
+               async: false,//前端ajax接收json值
+                error:function (request) {
+                    alert("发送请求失败！");
+                },
+                success:function(result){
+{#                   console.log(result.url);#}
+{#                   window.location.reload();#}
+                    $('.main-img').attr("src", result.url);
+                    $('.main-img').attr("id", result.img_hash);
+                    $('.title').html(result.title);
+                    $('.episode').html( result.episode);
+                    $('.frame_timestamp').html(result.frame_timestamp);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

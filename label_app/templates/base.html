@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ url_for('static',filename='imgs/favicon.ico') }}"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+    <title>图片标注平台</title>
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-inverse navbar-fixed-top navbar-default" role="navigation">
+        <div class="container">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="">Whaley图片标注平台</a>
+            </div>
+        </div>
+    </nav>
+    <div class="well">
+        <div class="list-group">
+            {% for item in items %}
+                <a href="{{ url_for('files', filename=item) }}" class="list-group-item">{{ item }}</a>
+            {% endfor %}
+        </div>
+    </div>
+    <script type="text/javascript" src="{{url_for('static',filename='js/jquery.min.js')}}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+</body>
+</html>
