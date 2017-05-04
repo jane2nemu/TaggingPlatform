@@ -13,7 +13,7 @@
     <nav class="navbar navbar-inverse navbar-fixed-top navbar-default" role="navigation">
         <div class="container">
             <div class="navbar-header">
-                <a class="navbar-brand" href="">Whaley图片标注平台</a>
+                <a class="navbar-brand" href="/">Whaley图片标注平台</a>
             </div>
         </div>
     </nav>
@@ -28,10 +28,10 @@
                         <tr><td>当前时间戳</td><td class="frame_timestamp">{{ frame_timestamp }}</td></tr>
                         <tr><td>主演</td>
                              <td>
-                                {% for actor in acts[:-2] %}
+                                {% for actor in acts[:-3] %}
                                     {{ actor }},
                                 {% endfor %}
-                             {{ acts[-2] }}
+                             {{ acts[-3] }}
                             </td>
                         </tr>
                     </table>
@@ -42,12 +42,16 @@
                     <img  class="img-thumbnail main-img" src="{{ url }}" id="{{ img_hash }}" height="500" width="550">
                 </div>
                 <div class="well buttons">
-                   {% for act in acts[:-1] %}
+                   {% for act in acts[:-2] %}
                        <button  class="btn btn-primary" style="height:40px;width:100px;" type="button" value="{{ act }}">
-                        {{ act }}
+                           {{ act }}
                        </button>
                    {% endfor %}
-                <button  class="btn btn-warning" style="height:40px;width:100px;" type="button" value="{{ acts[-1] }}">{{ acts[-1] }}</button>
+                    {% for act in acts[-2:] %}
+                        <button  class="btn btn-warning" style="height:40px;width:100px;" type="button" value="{{ act }}">
+                            {{ act }}
+                        </button>
+                    {% endfor %}
                 </div>
             </div>
         </div>
@@ -61,16 +65,12 @@
             var aname = $(this).attr("value");
             var img_hash = $('.main-img').attr("id");
             var title = $('.title').text();
-            var episode = $('.episode').text();
-            var frame_timestamp = $('.frame_timestamp').text();
 {#            alert(check);#}
             console.log(title);
             var data = {
                 "aname": aname,
                 "img_hash": img_hash,
-                "title": title,
-                "episode": episode,
-                "frame_timestamp": frame_timestamp
+                "title": title
             };
             $.ajax({
                type: "POST",
@@ -83,12 +83,12 @@
                 },
                 success:function(result){
 {#                   console.log(result.url);#}
-{#                   window.location.reload();#}
-                    $('.main-img').attr("src", result.url);
-                    $('.main-img').attr("id", result.img_hash);
-                    $('.title').html(result.title);
-                    $('.episode').html( result.episode);
-                    $('.frame_timestamp').html(result.frame_timestamp);
+                    window.location.reload();
+{#                    $('.main-img').attr("src", result.url);#}
+{#                    $('.main-img').attr("id", result.img_hash);#}
+{#                    $('.title').html(result.title);#}
+{#                    $('.episode').html( result.episode);#}
+{#                    $('.frame_timestamp').html(result.frame_timestamp);#}
                 }
             });
         });

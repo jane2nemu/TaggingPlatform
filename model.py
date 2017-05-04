@@ -35,8 +35,19 @@ class PicLabel(Base):
     create_date = Column(DateTime)
     update_date = Column(DateTime)
 
-query = session.query(PicLabel)
 
+class CheckActor(Base):
+    __tablename__ = 'check_actor'
+    __table_args__ = {
+        'mysql_engine': 'InnoDB',
+        'mysql_charset': 'utf8'
+    }
+    sid = Column(String(255), primary_key=True)
+    actor = Column(String(255), primary_key=True)
+    status = Column(Integer)
+
+query = session.query(PicLabel)
+queryc = session.query(CheckActor)
 # def init_db():
 #     '''
 #     初始化数据库

@@ -20,7 +20,15 @@
     <div class="well">
         <div class="list-group">
             {% for item in items %}
-                <a href="{{ url_for('files', filename=item) }}" class="list-group-item">{{ item }}</a>
+                {% set rowloop = loop %}
+                {% for key, value in item.iteritems() %}
+                     <a href="{{ url_for('files', filename=key) }}" class="list-group-item">
+                         {{ rowloop.index }}. {{ key }}
+                         {% if value == 1 %}
+                             <span class="badge">已完成</span>
+                         {% endif %}
+                     </a>
+                {% endfor %}
             {% endfor %}
         </div>
     </div>
