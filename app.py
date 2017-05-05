@@ -12,52 +12,93 @@ import json
 from urllib2 import urlopen
 from flask import render_template, jsonify, request
 from label_app import app
-from model import PicLabel, CheckActor, session, query, queryc
+from model import PicLabel, CheckActor, session, query, queryc, DBSession
+import os
+import hashlib
 
 app.config.from_object('config')
 baseurl = "../static/imgs/"
 json_url = "http://vod.aginomoto.com/Service/V3/Program?sid=%s"
 
-
 def get_url(file_name):
     """获取图片信息"""
-    uquery = query.filter(PicLabel.label == 0, PicLabel.title == file_name).first()
-    url = baseurl + uquery.image_path
-    img_hash = uquery.image_hash
-    title = uquery.title
-    episode = uquery.episode
-    print episode
-    frame_timestamp = uquery.frame_timestamp
-    return url, img_hash, title, episode, frame_timestamp
-
-
-def get_actors(sid):
-    """获取主演名单"""
-    body = urlopen(json_url % sid).read()
-    json_dict = json.loads(body)
-    actors = json_dict.get("program", {}).get("metadata", {}).get("cast", [])
-    return actors
+    session = DBSession()
+    session.expire_on_commit = False
+    offset_limit = session.query(PicLabel).filter(PicLabel.label == 0, PicLabel.title == file_name).count()
+    offset_row = int(hashlib.sha1(os.urandom(10)).hexdigest(), 16) % offset_limit
+    #offset_row = random.randint(0, offset_limit)
+    uquery = session.query(PicLabel).filter(PicLabel.label == 0, PicLabel.title == file_name).offset(offset_row).first()
+    session.commit()
+    session.close()
+    try:
+        url = baseurl + uquery.image_path
+        img_hash = uquery.image_hash
+        title = uquery.title
+        episode = uquery.episode
+        print episode
+        frame_timestamp = uquery.frame_timestamp
+        return url, img_hash, title, episode, frame_timestamp
+    except:
+        return None
 
 
 def get_sid(file_name):
     """获取sid"""
-    uquery = query.filter(PicLabel.label == 0, PicLabel.title == file_name).first()
+    session = DBSession()
+    session.expire_on_commit = False
+    uquery = session.query(PicLabel).filter(PicLabel.label == 0, PicLabel.title == file_name).first()
+    session.commit()
+    session.close()
     if uquery:
         return uquery.sid
 
 
+def get_actors(sid):
+    """获取至多10个主演名单"""
+    session = DBSession()
+    session.expire_on_commit = False
+    uquerys = session.query(CheckActor)
+    uquery = uquerys.filter(CheckActor.sid == sid).all()
+    session.commit()
+    session.close()
+    actors = [act.actor for act in uquery]
+    return actors[:10]
+
+
 def get_cur_actors(sid):
-    """获取未标注过演员名单"""
+    """获取未标注过主演名单"""
     actors = get_actors(sid)
-    querycs = queryc.filter(CheckActor.sid == sid).all()
+
+    session = DBSession()
+    session.expire_on_commit = False
+    querycs = session.query(CheckActor).filter(CheckActor.sid == sid).all()
+    session.commit()
+    session.close()
+
     for qactor in querycs:
         if qactor.status == 1:
             actors.remove(qactor.actor)
-    return actors[:10] + [u"不保留", u"跳过"]
+    return actors + [u"不保留", u"跳过"]
 
 
 def get_home_items():
     """获取剧名列表"""
+
+    session = DBSession()
+    sid_need_tag = {obj.sid for obj in session.query(CheckActor.sid, CheckActor.status).all() if not obj.status}
+    sid_title = {obj.sid: obj.title for obj in session.query(PicLabel.sid, PicLabel.title).distinct()}
+    nonempty_sid = {obj.sid for obj in session.query(PicLabel.sid, PicLabel.title).filter(PicLabel.label == 0).distinct()}
+    session.commit()
+    session.close()
+
+    items = []
+    for k, v in sid_title.items():
+        if k in sid_need_tag and k in nonempty_sid: badge = 0
+        else: badge = 1
+        items.append({v: badge})
+
+
+    '''
     querycs = session.query(CheckActor.sid).distinct()
     items = []
     for qs in querycs:
@@ -72,6 +113,7 @@ def get_home_items():
             if cnt == len(status_set):
                 badge = 1
             items.append({title: badge})
+    '''
     return items
 
 
@@ -92,33 +134,52 @@ def files(filename):
         items = get_home_items()
         return render_template('base.html', items=items)
     else:
-        url, img_hash, title, episode, frame_timestamp = get_url(filename)
+        img_obj = get_url(filename)
+        loop_limit = 10
+        while not img_obj and loop_limit > 0:
+            img_obj = get_url(filename)
+            loop_limit -= 1
+        url, img_hash, title, episode, frame_timestamp = img_obj
         return render_template('home.html', url=url, acts=actors, img_hash=img_hash, title=title,
                            episode=episode, frame_timestamp=frame_timestamp)
 
 
 @app.route('/get_data', methods=["POST"])
 def get_data():
-    if request.method == "POST":
-        rdict = {
-            "aname": '',
-            "img_hash": '',
-            "title": ''
-        }
+    #if request.method == "POST":
+    rdict = {
+        "aname": '',
+        "img_hash": '',
+        "title": ''
+    }
     for item in rdict:
         rdict[item] = request.values.get(item, '')
-    row = query.filter_by(image_hash=rdict["img_hash"])
-    row2 = queryc.filter(CheckActor.actor == rdict["aname"])
-    if rdict["aname"] is not u"不保留" and rdict["aname"] is not u"跳过":
-        row.update({PicLabel.aname: rdict["aname"]})
+
+    row_update_dict = {}
+    row2_update_dict = {}
+
     if rdict["aname"] == u"不保留":
-        row.update({PicLabel.valid: 0})
-    if rdict["aname"] is not u"跳过":
-        row.update({PicLabel.label: 1})
-        row2.update({CheckActor.status: 1})
-    session.commit()
-    url, img_hash, title, episode, frame_timestamp = get_url(rdict["title"])
-    return jsonify(url=url, img_hash=img_hash, title=title, episode=episode, frame_timestamp=frame_timestamp)
+        row_update_dict['valid'] = 0
+        row_update_dict['label'] = 1
+    elif rdict["aname"] != u"跳过":
+        row_update_dict['aname'] = rdict['aname']
+        row_update_dict['label'] = 1
+        row2_update_dict['status'] = 1
+
+    session = DBSession()
+    try:
+        if row_update_dict: session.query(PicLabel).filter_by(image_hash=rdict["img_hash"]).update(row_update_dict)
+        if row2_update_dict:  session.query(CheckActor).filter(CheckActor.actor == rdict["aname"]).update(row2_update_dict)
+        session.commit()
+    except:
+        session.rollback()
+    finally:
+        session.close()
+
+
+    #url, img_hash, title, episode, frame_timestamp = get_url(rdict["title"])
+    #return jsonify(url=url, img_hash=img_hash, title=title, episode=episode, frame_timestamp=frame_timestamp)
+    return jsonify({'error_code': 0})
 
 
 if __name__ == "__main__":
