@@ -11,7 +11,7 @@ from sqlalchemy import create_engine, Column, String, Integer, DateTime
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-engine = create_engine('mysql+mysqlconnector://whaley:yelahw@172.16.103.18/ota20?charset=utf8mb4', echo=False)
+engine = create_engine('mysql+mysqlconnector://whaley:yelahw@172.16.16.134/ota20?charset=utf8mb4', echo=False)
 
 DBSession = sessionmaker(bind=engine)
 session = DBSession()
@@ -34,6 +34,7 @@ class PicLabel(Base):
     valid = Column(Integer)
     create_date = Column(DateTime)
     update_date = Column(DateTime)
+    current = Column(Integer)
 
 
 class CheckActor(Base):

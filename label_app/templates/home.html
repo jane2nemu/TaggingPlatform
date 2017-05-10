@@ -32,7 +32,6 @@
                                     {% for actor in acts[:-3] %}
                                         {{ actor }},
                                     {% endfor %}
-                                 {{ acts[-3] }}
                                 </td>
                             </tr>
                         </table>
@@ -43,12 +42,12 @@
                         <img  class="img-thumbnail main-img" src="{{ url }}" id="{{ img_hash }}" height="500" width="550">
                     </div>
                     <div class="well buttons">
-                       {% for act in acts[:-2] %}
+                       {% for act in acts[:-3] %}
                            <button  class="btn btn-primary" style="height:40px;width:100px;" type="button" value="{{ act }}">
                                {{ act }}
                            </button>
                        {% endfor %}
-                        {% for act in acts[-2:] %}
+                        {% for act in acts[-3:] %}
                             <button  class="btn btn-warning" style="height:40px;width:100px;" type="button" value="{{ act }}">
                                 {{ act }}
                             </button>
